@@ -6,6 +6,7 @@ input_dir <- args[1]
 output_dir <- args[2]
 
 source("https://raw.githubusercontent.com/BHKLAB-Pachyderm/ICB_Common/main/code/Get_Response.R")
+source("https://raw.githubusercontent.com/BHKLAB-Pachyderm/ICB_Common/main/code/format_clin_data.R")
 
 #############################################################################
 #############################################################################
@@ -25,7 +26,10 @@ clinical$Overall.Survival..Days. = as.numeric( as.character( clinical$Overall.Su
 clinical$Last.Followup.Status = ifelse( clinical$Last.Followup.Status %in% "Alive" , 0 , 
 								ifelse( clinical$Last.Followup.Status %in% c( "Dead" , "Dead, melanoma" ) , 1 , 0 ) )
 
-clinical = clinical[ order( clinical$Overall.Survival..Days. , clinical$Last.Followup.Status ) , c("Patient.no." , "Age..Years." , "Sex" , "Treatment" , "Best.RECIST.response" , "Progression.Free.Survival..Days." , "Overall.Survival..Days." , "Progressed" , "Last.Followup.Status") ]
+clin_original <- clinical
+selected_cols <- c("Patient.no." , "Age..Years." , "Sex" , "Treatment" , "Best.RECIST.response" , "Progression.Free.Survival..Days." , "Overall.Survival..Days." , "Progressed" , "Last.Followup.Status")
+clinical = clinical[ order( clinical$Overall.Survival..Days. , clinical$Last.Followup.Status ) , selected_cols ]
+clin_original = clin_original[ order( clin_original$Overall.Survival..Days. , clin_original$Last.Followup.Status ) , ]
 
 #############################################################################
 #############################################################################
@@ -46,6 +50,7 @@ clin$os = as.numeric( as.character( surv[ rownames(clin) , "status" ] ) )
 clin = clin[ order( clin$t.os , clin$os ) , c("patient" , "t.os" , "os") ]
 
 clinical$Patient.no. = clin$patient
+clin_original$Patient.no. = clin$patient
 clinical = as.data.frame( cbind( clinical , "Melanoma" , NA , NA , NA , NA , NA , NA ) )
 colnames(clinical) = c( "patient" , "age" , "sex" , "drug_type" , "recist" , "t.pfs" , "t.os" , "pfs" ,"os" , "primary" , "histo" , "response" , "stage" , "response.other.info" , "dna" , "rna" )
 clinical$drug_type = "PD-1/PD-L1"
@@ -59,6 +64,8 @@ clinical$response = Get_Response( data = clinical )
 clinical$rna = "tpm"
 
 clinical = clinical[ , c("patient" , "sex" , "age" , "primary" , "histo" , "stage" , "response.other.info" , "recist" , "response" , "drug_type" , "dna" , "rna" , "t.pfs" , "pfs" , "t.os" , "os" ) ]
+
+clinical <- format_clin_data(clin_original, 'Patient.no.', selected_cols, clinical)
 
 #############################################################################
 #############################################################################
