@@ -7,16 +7,18 @@ S3 = S3RemoteProvider(
 )
 prefix = config["prefix"]
 filename = config["filename"]
-data_source  = "https://raw.githubusercontent.com/BHKLAB-Pachyderm/ICB_Gide-data/main/"
 
 rule get_MultiAssayExp:
-    output:
-        S3.remote(prefix + filename)
     input:
         S3.remote(prefix + "processed/cased_sequenced.csv"),
         S3.remote(prefix + "processed/CLIN.csv"),
-        S3.remote(prefix + "processed/EXPR.csv"),
+        S3.remote(prefix + "processed/EXPR_gene_tpm.csv"),
+        S3.remote(prefix + "processed/EXPR_gene_counts.csv"),
+        S3.remote(prefix + "processed/EXPR_isoform_tpm.csv"),
+        S3.remote(prefix + "processed/EXPR_isoform_counts.csv"),
         S3.remote(prefix + "annotation/Gencode.v40.annotation.RData")
+    output:
+        S3.remote(prefix + filename)
     resources:
         mem_mb=3000,
         disk_mb=3000
@@ -27,10 +29,45 @@ rule get_MultiAssayExp:
         load(paste0("{prefix}", "annotation/Gencode.v40.annotation.RData"))
         source("https://raw.githubusercontent.com/BHKLAB-Pachyderm/ICB_Common/main/code/get_MultiAssayExp.R");
         saveRDS(
-            get_MultiAssayExp(study = "Gide", input_dir = paste0("{prefix}", "processed")), 
+            get_MultiAssayExp(study = "Gide", input_dir = paste0("{prefix}", "processed"), expr_with_counts_isoforms=TRUE), 
             "{prefix}{filename}"
         );
         '
+        """
+
+rule format_data:
+    input:
+        S3.remote(prefix + "download/expr_list.rds"),
+        S3.remote(prefix + "download/mel_gide19_survival_data.csv"),
+        S3.remote(prefix + "download/mel_gide19_cli_data.csv"),
+        S3.remote(prefix + "download/CLIN_GIDE.txt")
+    output:
+        S3.remote(prefix + "processed/cased_sequenced.csv"),
+        S3.remote(prefix + "processed/CLIN.csv"),
+        S3.remote(prefix + "processed/EXPR_gene_tpm.csv"),
+        S3.remote(prefix + "processed/EXPR_gene_counts.csv"),
+        S3.remote(prefix + "processed/EXPR_isoform_tpm.csv"),
+        S3.remote(prefix + "processed/EXPR_isoform_counts.csv")
+    shell:
+        """
+        Rscript scripts/Format_Data.R \
+        {prefix}download \
+        {prefix}processed \
+        """
+
+rule format_downloaded_data:
+    input:
+        S3.remote(prefix + "download/Gide_kallisto.zip"),
+        S3.remote(prefix + "download/1-s2.0-S1535610819300376-mmc2.xlsx"),
+        S3.remote(prefix + "annotation/Gencode.v40.annotation.RData")
+    output:
+        S3.remote(prefix + "download/CLIN_GIDE.txt"),
+        S3.remote(prefix + "download/expr_list.rds")
+    shell:
+        """
+        Rscript scripts/format_downloaded_data.R \
+        {prefix}download \
+        {prefix}annotation \
         """
 
 rule download_annotation:
@@ -41,34 +78,17 @@ rule download_annotation:
         wget https://github.com/BHKLAB-Pachyderm/Annotations/blob/master/Gencode.v40.annotation.RData?raw=true -O {prefix}annotation/Gencode.v40.annotation.RData 
         """
 
-rule format_data:
-    output:
-        S3.remote(prefix + "processed/cased_sequenced.csv"),
-        S3.remote(prefix + "processed/CLIN.csv"),
-        S3.remote(prefix + "processed/EXPR.csv")
-    input:
-        S3.remote(prefix + "download/mel_gide19_exp_data.csv"),
-        S3.remote(prefix + "download/mel_gide19_survival_data.csv"),
-        S3.remote(prefix + "download/mel_gide19_clin_data.csv"),
-        S3.remote(prefix + "download/CLIN_GIDE.txt")
-    shell:
-        """
-        Rscript scripts/Format_Data.R \
-        {prefix}download \
-        {prefix}processed \
-        """
-
 rule download_data:
     output:
-        S3.remote(prefix + "download/mel_gide19_exp_data.csv"),
+        S3.remote(prefix + "download/Gide_kallisto.zip"),
         S3.remote(prefix + "download/mel_gide19_survival_data.csv"),
-        S3.remote(prefix + "download/mel_gide19_clin_data.csv"),
-        S3.remote(prefix + "download/CLIN_GIDE.txt")
+        S3.remote(prefix + "download/mel_gide19_cli_data.csv"),
+        S3.remote(prefix + "download/1-s2.0-S1535610819300376-mmc2.xlsx")
         
     shell:
         """
-        wget {data_source}mel_gide19_exp_data.csv -O {prefix}download/mel_gide19_exp_data.csv
-        wget -O {prefix}download/mel_gide19_survival_data.csv {data_source}mel_gide19_survival_data.csv
-        wget -O {prefix}download/mel_gide19_clin_data.csv {data_source}mel_gide19_clin_data.csv
-        wget -O {prefix}download/CLIN_GIDE.txt {data_source}CLIN_GIDE.txt
+        wget https://github.com/BHKLAB-Pachyderm/ICB_Gide-data/raw/main/Gide_kallisto.zip -O {prefix}download/Gide_kallisto.zip
+        wget https://ars.els-cdn.com/content/image/1-s2.0-S1535610819300376-mmc2.xlsx -O {prefix}download/1-s2.0-S1535610819300376-mmc2.xlsx
+        wget https://raw.githubusercontent.com/xmuyulab/ims_gene_signature/main/data/mel_gide19_survival_data.csv -O {prefix}download/mel_gide19_survival_data.csv
+        wget https://raw.githubusercontent.com/xmuyulab/ims_gene_signature/main/data/mel_gide19_cli_data.csv -O {prefix}download/mel_gide19_cli_data.csv
         """ 
