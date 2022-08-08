@@ -57,7 +57,12 @@ rule format_data:
 
 rule format_downloaded_data:
     input:
-        S3.remote(prefix + "download/Gide_kallisto.zip"),
+        S3.remote(prefix + "download/Gide_kallisto1.zip"),
+        S3.remote(prefix + "download/Gide_kallisto2.zip"),
+        S3.remote(prefix + "download/Gide_kallisto3.zip"),
+        S3.remote(prefix + "download/Gide_kallisto4.zip"),
+        S3.remote(prefix + "download/Gide_kallisto5.zip"),
+        S3.remote(prefix + "download/Gide_kallisto6.zip"),
         S3.remote(prefix + "download/1-s2.0-S1535610819300376-mmc2.xlsx"),
         S3.remote(prefix + "annotation/Gencode.v40.annotation.RData")
     output:
@@ -80,14 +85,23 @@ rule download_annotation:
 
 rule download_data:
     output:
-        S3.remote(prefix + "download/Gide_kallisto.zip"),
+        S3.remote(prefix + "download/Gide_kallisto1.zip"),
+        S3.remote(prefix + "download/Gide_kallisto2.zip"),
+        S3.remote(prefix + "download/Gide_kallisto3.zip"),
+        S3.remote(prefix + "download/Gide_kallisto4.zip"),
+        S3.remote(prefix + "download/Gide_kallisto5.zip"),
+        S3.remote(prefix + "download/Gide_kallisto6.zip"),
         S3.remote(prefix + "download/mel_gide19_survival_data.csv"),
         S3.remote(prefix + "download/mel_gide19_cli_data.csv"),
-        S3.remote(prefix + "download/1-s2.0-S1535610819300376-mmc2.xlsx")
-        
+        S3.remote(prefix + "download/1-s2.0-S1535610819300376-mmc2.xlsx")     
     shell:
         """
-        wget https://github.com/BHKLAB-Pachyderm/ICB_Gide-data/raw/main/Gide_kallisto.zip -O {prefix}download/Gide_kallisto.zip
+        wget -O {prefix}download/Gide_kallisto1.zip "https://zenodo.org/record/6968597/files/Gide_kallisto1.zip?download=1"
+        wget -O {prefix}download/Gide_kallisto2.zip "https://zenodo.org/record/6968597/files/Gide_kallisto2.zip?download=1"
+        wget -O {prefix}download/Gide_kallisto3.zip "https://zenodo.org/record/6968597/files/Gide_kallisto3.zip?download=1"
+        wget -O {prefix}download/Gide_kallisto4.zip "https://zenodo.org/record/6968597/files/Gide_kallisto4.zip?download=1"
+        wget -O {prefix}download/Gide_kallisto5.zip "https://zenodo.org/record/6968597/files/Gide_kallisto5.zip?download=1"
+        wget -O {prefix}download/Gide_kallisto6.zip "https://zenodo.org/record/6968597/files/Gide_kallisto6.zip?download=1"
         wget https://ars.els-cdn.com/content/image/1-s2.0-S1535610819300376-mmc2.xlsx -O {prefix}download/1-s2.0-S1535610819300376-mmc2.xlsx
         wget https://raw.githubusercontent.com/xmuyulab/ims_gene_signature/main/data/mel_gide19_survival_data.csv -O {prefix}download/mel_gide19_survival_data.csv
         wget https://raw.githubusercontent.com/xmuyulab/ims_gene_signature/main/data/mel_gide19_cli_data.csv -O {prefix}download/mel_gide19_cli_data.csv
